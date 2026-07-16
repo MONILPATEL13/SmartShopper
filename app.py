@@ -29,8 +29,11 @@ os.makedirs(QR_FOLDER, exist_ok=True)
 # ---------------- SMTP Configuration ----------------  
 app.config['SMTP_SERVER'] = 'smtp-relay.brevo.com'
 app.config['SMTP_PORT'] = 587
-app.config['SMTP_EMAIL'] = os.environ.get('SMTP_EMAIL')
+app.config['SMTP_EMAIL'] = os.environ.get('SMTP_EMAIL')            # SMTP login (e.g. b24161001@smtp-brevo.com)
 app.config['SMTP_PASSWORD'] = os.environ.get('SMTP_PASSWORD')
+# The "From" address must be a verified sender in Brevo (Senders, Domains & Dedicated IPs).
+# This is usually a different address than the SMTP login above.
+app.config['SENDER_EMAIL'] = os.environ.get('SENDER_EMAIL', 'smartshopperguide6@gmail.com')
 
 OTP_VALID_MINUTES = 10       
 
@@ -102,56 +105,34 @@ def generate_otp():
 
 def send_otp_email(to_email, otp):
     try:
-        print("STEP 1")
-
         msg = MIMEText(
-            f"Your Smart Shopper OTP is {otp}"
+            f"Your Smart Shopper OTP is {otp}. It is valid for {OTP_VALID_MINUTES} minutes."
         )
 
-        msg["Subject"] = "OTP"
-        msg["From"] = app.config["SMTP_EMAIL"]
+        msg["Subject"] = "Your Smart Shopper OTP"
+        msg["From"] = app.config["SENDER_EMAIL"]
         msg["To"] = to_email
-
-        print("STEP 2")
 
         context = ssl.create_default_context()
 
-        print("STEP 3")
-
-        server = smtplib.SMTP(
-            app.config["SMTP_SERVER"],
-            app.config["SMTP_PORT"],
-            timeout=10
-        )
-
-        print("STEP 4")
-
+        # Connect to Brevo's SMTP relay
+        server = smtplib.SMTP(app.config["SMTP_SERVER"], app.config["SMTP_PORT"])
         server.starttls(context=context)
-
-        print("STEP 5")
-
         server.login(
             app.config["SMTP_EMAIL"],
             app.config["SMTP_PASSWORD"]
         )
-
-        print("STEP 6")
-
         server.sendmail(
-            app.config["SMTP_EMAIL"],
+            app.config["SENDER_EMAIL"],
             to_email,
             msg.as_string()
         )
-
-        print("STEP 7")
-
         server.quit()
 
         return True
 
     except Exception as e:
-        print("EMAIL ERROR:")
-        print(e)
+        print("EMAIL ERROR:", e)
         return False
 
 
