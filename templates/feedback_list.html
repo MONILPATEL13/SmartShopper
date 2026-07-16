@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Customer Feedback - Smart Shopper's Guide</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(to right, #ffffff, #0562db);
+      font-family: 'Segoe UI', sans-serif;
+      color: #003366;
+      padding-top: 30px;
+    }
+    .container {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      padding: 30px;
+    }
+    table th { background-color: #0562db; color: #fff; }
+    h2 { text-align: center; color: #0056b3; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>💬 Customer Feedback</h2>
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Rating</th>
+            <th>Comment</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in feedback_list %}
+          <tr>
+            <td>{{ f.user_name }}</td>
+            <td>{{ f.email }}</td>
+            <td>{{ f.rating }}</td>
+            <td>{{ f.comment }}</td>
+            <td>{{ f.created_at }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="text-center">No feedback submitted yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="text-center mt-3">
+      <a href="{{ url_for('dashboard_admin') }}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Shopper's Guide - Customer Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(to right, #ffffff, #0562db);
+      font-family: 'Segoe UI', sans-serif;
+      color: #003366;
+      min-height: 100vh;
+    }
+    header {
+      background-color: #fff;
+      text-align: center;
+      padding: 15px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      position: relative;
+    }
+    header h2 { color: #0056b3; margin: 0; font-weight: 700; }
+    .logout-btn { position: absolute; right: 20px; top: 20px; }
+    .category-section, .cart-box, .feedback-section, .mall-box {
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    table th { background-color: #0562db; color: #fff; }
+    .budget-alert {
+      background: #ffcccc;
+      color: #cc0000;
+      padding: 10px;
+      text-align: center;
+      border-radius: 5px;
+      display: none;
+    }
+    .special-offer {
+      background: #fff3cd;
+      padding: 15px;
+      border: 1px solid #ffeeba;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    .flash-msg { padding: 8px; border-radius: 5px; margin-bottom: 10px; font-size: 14px; }
+    .flash-error   { background:#ffe0e0; color:#b30000; border:1px solid #ffb3b3; }
+    .flash-success { background:#e2ffe2; color:#046a04; border:1px solid #b3e6b3; }
+    .btn-nav { background:#28a745; color:#fff; border:none; }
+    .btn-nav:hover { background:#1e7e34; color:#fff; }
+    .btn-add { background:#0077cc; color:#fff; border:none; }
+    .btn-add:hover { background:#005fa3; color:#fff; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h2>Smart Shopper's Guide</h2>
+    <p class="mb-0">Compare, Save, and Shop Smart</p>
+    <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-sm logout-btn">Logout</a>
+  </header>
+
+  <main class="container mt-4">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash-msg {{ 'flash-error' if category == 'error' else 'flash-success' }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if not selected_mall %}
+    <!-- No mall accessed yet: customer must scan a mall's QR code or type its Mall ID -->
+    <section class="mall-box text-center">
+      <h4>🏬 Access a Mall</h4>
+      <p class="text-muted">
+        You don't have access to any mall's products yet. Scan the QR code stamped around the mall
+        with your phone's camera, or type the Mall ID printed on that stamp below.
+      </p>
+      <form method="GET" action="{{ url_for('dashboard_customer') }}" class="row g-2 justify-content-center">
+        <div class="col-md-6">
+          <input type="number" name="mall_id" class="form-control" placeholder="Enter Mall ID" required>
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-add w-100">Enter Mall</button>
+        </div>
+      </form>
+    </section>
+
+    {% else %}
+    <!-- Currently accessed mall -->
+    <section class="mall-box d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h5 class="mb-1">{{ selected_mall.mall_name }}</h5>
+        <p class="mb-0 text-muted">{{ selected_mall.mall_location }} &mdash; Mall ID: {{ selected_mall.id }}</p>
+      </div>
+      <a href="{{ url_for('leave_mall') }}" class="btn btn-secondary btn-sm">🔁 Leave / Switch Mall</a>
+    </section>
+
+    <!-- Available Products -->
+    <section class="category-section">
+      <h4>🛒 Available Products</h4>
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Discount Price</th>
+              <th>Description</th>
+              <th>Add to Inventory</th>
+              <th>Navigate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in products %}
+            <tr>
+              <td>{{ p.product_name }}</td>
+              <td>{{ p.category }}</td>
+              <td>₹{{ "%.2f"|format(p.price) }}</td>
+              <td>{% if p.offer %}₹{{ "%.2f"|format(p.offer|float) }}{% else %}&mdash;{% endif %}</td>
+              <td>{{ p.description }}</td>
+              <td>
+                <button class="btn btn-add btn-sm"
+                        onclick="addToCart('{{ p.product_name|e }}', {{ p.offer if p.offer else p.price }})">
+                  Add
+                </button>
+              </td>
+              <td>
+                {% if p.latitude and p.longitude %}
+                <button class="btn btn-nav btn-sm"
+                        onclick="navigateToProduct({{ p.latitude }}, {{ p.longitude }}, '{{ p.sensor_code }}', '{{ p.product_name|e }}')">
+                  📍 Navigate
+                </button>
+                {% else %}
+                <span class="text-muted">No sensor set</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center">No products found for this mall yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="field-hint text-muted" style="font-size:13px;">
+        "Navigate" uses your device's live location together with the mall's preset IPS (Bluetooth/Wi-Fi) sensor
+        point to plot the closest walking route to that product's section.
+      </p>
+    </section>
+
+    <!-- Inventory / Cart -->
+    <section class="cart-box">
+      <h4>🧺 Your Inventory (To-Do Style)</h4>
+      <div class="table-responsive">
+        <table class="table table-bordered" id="inventoryTable">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Price</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="cartItems"></tbody>
+        </table>
+      </div>
+      <h5>Total: ₹<span id="cartTotal">0</span></h5>
+
+      <div class="mt-3">
+        <label for="budget" class="form-label">💰 Set Your Budget (Price Stopper)</label>
+        <div class="d-flex gap-2">
+          <input type="number" id="budget" class="form-control" placeholder="Enter budget amount">
+          <button class="btn btn-add" onclick="setStopper()">Set Stopper</button>
+        </div>
+        <p class="field-hint text-muted mt-1" style="font-size:13px;">Current Stopper: ₹<span id="currentStopper">Not set</span></p>
+        <div class="budget-alert mt-2" id="budgetAlert">⚠️ Your cart total has crossed your budget limit!</div>
+      </div>
+    </section>
+
+    <!-- Special Offers (added by this mall's admin only) -->
+    <section class="special-offer">
+      <h6>🎁 Special Offers</h6>
+      {% for o in offers %}
+        <p class="{% if not loop.last %}mb-1{% else %}mb-0{% endif %}">
+          🔥 <strong>{{ o.title }}</strong>{% if o.description %} &mdash; {{ o.description }}{% endif %}
+        </p>
+      {% else %}
+        <p class="mb-0 text-muted">No special offers running at this mall right now.</p>
+      {% endfor %}
+    </section>
+
+    <!-- Feedback -->
+    <section class="feedback-section">
+      <h4>💬 Feedback & Review</h4>
+      <form action="{{ url_for('submit_feedback') }}" method="POST">
+        <div class="mb-3">
+          <label class="form-label">Your Name</label>
+          <input type="text" class="form-control" name="user_name" pattern="[A-Za-z ]{2,50}" title="Letters and spaces only" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" name="email" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Rating</label>
+          <select name="rating" class="form-select" required>
+            <option value="">Select</option>
+            <option>1 - Poor</option>
+            <option>2 - Fair</option>
+            <option>3 - Good</option>
+            <option>4 - Very Good</option>
+            <option>5 - Excellent</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Comments</label>
+          <textarea name="comment" class="form-control" rows="3" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Submit Feedback</button>
+      </form>
+    </section>
+    {% endif %}
+
+  </main>
+
+  <script>
+    let cart = [];
+    let total = 0;
+    let stopper = null;
+    let stopperAlertShown = false; // avoid re-popping the alert on every add while still over budget
+
+    function addToCart(product, price) {
+      price = parseFloat(price);
+      cart.push({ product, price });
+      total += price;
+      renderCart();
+      checkStopper();
+    }
+
+    function removeFromCart(index) {
+      total -= cart[index].price;
+      cart.splice(index, 1);
+      renderCart();
+      checkStopper();
+    }
+
+    function renderCart() {
+      const body = document.getElementById('cartItems');
+      body.innerHTML = '';
+      cart.forEach((item, i) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${item.product}</td><td>₹${item.price.toFixed(2)}</td>
+                          <td><button class="btn btn-danger btn-sm" onclick="removeFromCart(${i})">Remove</button></td>`;
+        body.appendChild(row);
+      });
+      document.getElementById('cartTotal').textContent = total.toFixed(2);
+    }
+
+    function setStopper() {
+      const val = parseFloat(document.getElementById('budget').value);
+      if (!val || val <= 0) {
+        alert('Please enter a valid budget amount.');
+        return;
+      }
+      stopper = val;
+      stopperAlertShown = false; // re-arm the alert for the new budget
+      document.getElementById('currentStopper').textContent = stopper.toFixed(2);
+      checkStopper();
+    }
+
+    function checkStopper() {
+      const alertBox = document.getElementById('budgetAlert');
+      if (stopper && total > stopper) {
+        alertBox.style.display = 'block';
+        if (!stopperAlertShown) {
+          alert('⚠️ Your cart total (₹' + total.toFixed(2) + ') has gone over your price stopper of ₹' + stopper.toFixed(2) + '!');
+          stopperAlertShown = true;
+        }
+      } else {
+        alertBox.style.display = 'none';
+        stopperAlertShown = false; // re-arm if the cart drops back under budget
+      }
+    }
+
+    // ---- IPS Navigation (simulated) ----
+    // Real BLE/Wi-Fi IPS sensors aren't installed yet, so each admin-entered
+    // sensor code (IPS1-IPS6) maps to a fixed preset location. We use the
+    // customer's live GPS position as the starting point and route them to
+    // that preset point, which stands in for "walk toward the sensor".
+    function navigateToProduct(lat, lng, sensorCode, productName) {
+      if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser.');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(function (pos) {
+        const origin = pos.coords.latitude + ',' + pos.coords.longitude;
+        const destination = lat + ',' + lng;
+        const url = 'https://www.google.com/maps/dir/?api=1&origin=' + origin +
+                    '&destination=' + destination + '&travelmode=walking';
+        window.open(url, '_blank');
+      }, function () {
+        alert('Unable to fetch your location. Please allow location access in your browser to navigate to ' + productName + '.');
+      });
+    }
+  </script>
+
+</body>
+</html>

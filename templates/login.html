@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - Smart Shopper's Guide</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      background: linear-gradient(to right, #ffffff, #0562db);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+    .login-box {
+      background-color: #ffffff;
+      color: #000;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .form-control {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    .btn {
+      width: 100%;
+      padding: 10px;
+      background: #0562db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background: #034ca9;
+    }
+    .register-link {
+      color: #0562db;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    /* --- small additions only, no visual overhaul --- */
+    .flash-msg {
+      padding: 8px;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      text-align: left;
+    }
+    .flash-error   { background:#ffe0e0; color:#b30000; border:1px solid #ffb3b3; }
+    .flash-success { background:#e2ffe2; color:#046a04; border:1px solid #b3e6b3; }
+    .field-hint {
+      font-size: 12px;
+      color: #666;
+      text-align: left;
+      margin: -4px 0 6px 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-box">
+    <h3>Login to Your Account</h3>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash-msg {{ 'flash-error' if category == 'error' else 'flash-success' }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form action="{{ url_for('login_page') }}" method="POST" id="loginForm">
+      <input type="email" name="email" class="form-control" placeholder="Email" required>
+      <input type="password" name="password" id="loginPassword" class="form-control" placeholder="Password" required>
+      <p style="text-align:right; margin:-4px 0 10px;">
+        <span class="register-link" onclick="location.href='{{ url_for('forgot_password') }}'">Forgot password?</span>
+      </p>
+      <button type="submit" class="btn">Login</button>
+    </form>
+
+    <p style="margin-top: 15px;">
+      Don’t have an account?
+      <span class="register-link" onclick="location.href='{{ url_for('register_page') }}'">Register</span>
+    </p>
+  </div>
+
+  <script>
+    // Light client-side check just so the user gets instant feedback;
+    // the real validation always happens on the server too.
+    document.getElementById('loginForm').addEventListener('submit', function (e) {
+      const pwd = document.getElementById('loginPassword').value;
+      if (pwd.length < 1) {
+        e.preventDefault();
+        alert('Please enter your password.');
+      }
+    });
+  </script>
+
+</body>
+</html>

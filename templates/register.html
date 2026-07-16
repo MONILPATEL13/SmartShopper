@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Register - Smart Shopper's Guide</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      background: linear-gradient(to right, #ffffff, #0562db);
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px 0;
+    }
+    .form-box {
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      width: 90%;
+      max-width: 400px;
+    }
+    h2 {
+      text-align: center;
+      color: #0562db;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #0562db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #034ca9;
+    }
+    .back {
+      text-align: center;
+      margin-top: 10px;
+    }
+    .back a {
+      color: #0562db;
+      text-decoration: none;
+    }
+    /* --- small additions only, no visual overhaul --- */
+    .role-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 25px;
+      margin-bottom: 15px;
+      font-size: 15px;
+    }
+    .role-toggle label {
+      cursor: pointer;
+    }
+    .flash-msg {
+      padding: 8px;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      text-align: left;
+    }
+    .flash-error   { background:#ffe0e0; color:#b30000; border:1px solid #ffb3b3; }
+    .flash-success { background:#e2ffe2; color:#046a04; border:1px solid #b3e6b3; }
+    .field-hint {
+      font-size: 12px;
+      color: #666;
+      margin: -4px 0 6px 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-box">
+    <h2>Create Your Account</h2>
+
+    <!-- Role toggle: Customer is selected by default -->
+    <div class="role-toggle">
+      <label><input type="radio" name="roleSwitch" value="customer" id="roleCustomer"> Customer</label>
+      <label><input type="radio" name="roleSwitch" value="admin" id="roleAdmin"> Mall Admin</label>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash-msg {{ 'flash-error' if category == 'error' else 'flash-success' }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Customer Registration Form -->
+    <form id="customerForm" action="{{ url_for('register_customer') }}" method="POST">
+      <input type="text" name="name" placeholder="Full Name" pattern="[A-Za-z ]{2,50}" title="Letters and spaces only" required>
+      <div class="field-hint">Letters and spaces only, 2–50 characters.</div>
+
+      <input type="email" name="email" placeholder="Email" required>
+      <div class="field-hint">Enter a valid email address.</div>
+
+      <input type="text" name="mobile" placeholder="Mobile Number" pattern="[6-9][0-9]{9}" maxlength="10" title="10-digit mobile number starting with 6-9" required>
+      <div class="field-hint">10-digit number, starts with 6, 7, 8 or 9.</div>
+
+      <input type="number" name="age" placeholder="Age" min="5" max="100" required>
+
+      <input type="password" name="password" id="customerPassword" placeholder="Password"
+             pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}"
+             title="Min 8 characters with uppercase, lowercase, number and special character" required>
+      <div class="field-hint">8+ chars, with uppercase, lowercase, number &amp; special character.</div>
+
+      <button type="submit">Register as Customer</button>
+      <div class="back"><a href="{{ url_for('login_page') }}">Back to Login</a></div>
+    </form>
+
+    <!-- Admin Registration Form -->
+    <form id="adminForm" action="{{ url_for('register_admin') }}" method="POST" style="display:none;">
+      <input type="text" name="name" placeholder="Full Name" pattern="[A-Za-z ]{2,50}" title="Letters and spaces only" required>
+      <div class="field-hint">Letters and spaces only, 2–50 characters.</div>
+
+      <input type="email" name="email" placeholder="Email" required>
+      <div class="field-hint">Enter a valid email address.</div>
+
+      <input type="password" name="password" id="adminPassword" placeholder="Password"
+             pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}"
+             title="Min 8 characters with uppercase, lowercase, number and special character" required>
+      <div class="field-hint">8+ chars, with uppercase, lowercase, number &amp; special character.</div>
+
+      <input type="text" name="mall_name" placeholder="Mall Name" required>
+      <input type="text" name="mall_location" placeholder="Mall Location" required>
+      <input type="text" name="map_url" placeholder="Map Address URL">
+      <input type="text" name="contact_no" placeholder="Mall Contact Number" pattern="[6-9][0-9]{9}" maxlength="10" title="10-digit number starting with 6-9" required>
+      <div class="field-hint">10-digit number, starts with 6, 7, 8 or 9.</div>
+
+      <input type="text" name="registration_id" placeholder="Mall Registration ID" required>
+
+      <button type="submit">Register as Admin</button>
+      <div class="back"><a href="{{ url_for('login_page') }}">Back to Login</a></div>
+    </form>
+  </div>
+
+  <script>
+    const customerForm = document.getElementById('customerForm');
+    const adminForm = document.getElementById('adminForm');
+    const roleCustomer = document.getElementById('roleCustomer');
+    const roleAdmin = document.getElementById('roleAdmin');
+
+    function showRole(role) {
+      if (role === 'admin') {
+        customerForm.style.display = 'none';
+        adminForm.style.display = 'block';
+        roleAdmin.checked = true;
+      } else {
+        adminForm.style.display = 'none';
+        customerForm.style.display = 'block';
+        roleCustomer.checked = true;
+      }
+    }
+
+    roleCustomer.addEventListener('change', () => showRole('customer'));
+    roleAdmin.addEventListener('change', () => showRole('admin'));
+
+    // Respect ?role=admin in the URL (e.g. after a validation error redirect),
+    // otherwise default to Customer as shown selected above.
+    const params = new URLSearchParams(window.location.search);
+    showRole(params.get('role') === 'admin' ? 'admin' : 'customer');
+  </script>
+
+</body>
+</html>
