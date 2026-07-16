@@ -101,27 +101,57 @@ def generate_otp():
 
 
 def send_otp_email(to_email, otp):
-    """Sends the OTP to the user's email via SMTP.
-    Requires app.config['SMTP_EMAIL'] / ['SMTP_PASSWORD'] above to be set to a
-    real sending account. Returns True on success, False on failure."""
     try:
+        print("STEP 1")
+
         msg = MIMEText(
-            f"Your Smart Shopper's Guide password reset OTP is: {otp}\n\n"
-            f"This OTP is valid for {OTP_VALID_MINUTES} minutes. "
-            f"If you did not request this, you can safely ignore this email."
+            f"Your Smart Shopper OTP is {otp}"
         )
-        msg['Subject'] = "Smart Shopper's Guide - Password Reset OTP"
-        msg['From'] = app.config['SMTP_EMAIL']
-        msg['To'] = to_email
+
+        msg["Subject"] = "OTP"
+        msg["From"] = app.config["SMTP_EMAIL"]
+        msg["To"] = to_email
+
+        print("STEP 2")
 
         context = ssl.create_default_context()
-        with smtplib.SMTP(app.config['SMTP_SERVER'], app.config['SMTP_PORT']) as server:
-            server.starttls(context=context)
-            server.login(app.config['SMTP_EMAIL'], app.config['SMTP_PASSWORD'])
-            server.sendmail(app.config['SMTP_EMAIL'], to_email, msg.as_string())
+
+        print("STEP 3")
+
+        server = smtplib.SMTP(
+            app.config["SMTP_SERVER"],
+            app.config["SMTP_PORT"],
+            timeout=10
+        )
+
+        print("STEP 4")
+
+        server.starttls(context=context)
+
+        print("STEP 5")
+
+        server.login(
+            app.config["SMTP_EMAIL"],
+            app.config["SMTP_PASSWORD"]
+        )
+
+        print("STEP 6")
+
+        server.sendmail(
+            app.config["SMTP_EMAIL"],
+            to_email,
+            msg.as_string()
+        )
+
+        print("STEP 7")
+
+        server.quit()
+
         return True
+
     except Exception as e:
-        print(f"[OTP EMAIL ERROR] {e}")
+        print("EMAIL ERROR:")
+        print(e)
         return False
 
 
