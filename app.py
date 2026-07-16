@@ -26,8 +26,8 @@ mysql = MySQL(app)
 QR_FOLDER = os.path.join('static', 'qr')
 os.makedirs(QR_FOLDER, exist_ok=True)
 
-# ---------------- SMTP Configuration ----------------
-app.config['SMTP_SERVER'] = 'smtp.gmail.com'
+# ---------------- SMTP Configuration ----------------  
+app.config['SMTP_SERVER'] = 'smtp-relay.brevo.com'
 app.config['SMTP_PORT'] = 587
 app.config['SMTP_EMAIL'] = os.environ.get('SMTP_EMAIL')
 app.config['SMTP_PASSWORD'] = os.environ.get('SMTP_PASSWORD')
