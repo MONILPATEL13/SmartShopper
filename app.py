@@ -7,30 +7,30 @@ from email.mime.text import MIMEText
 
 app = Flask(__name__)
 
-# WARNING: change this to a long random string before submitting/deploying anywhere public.
-app.secret_key = 'smart-shopper-secret-key-change-me'
+import os
 
-# ---------------- MySQL Configuration (XAMPP defaults) ----------------
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'smart_shopper'
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor'   # rows come back as dicts -> easy to use in templates
+# Secret Key
+app.secret_key = os.environ.get("SECRET_KEY", "smart-shopper-secret-key")
+
+# ---------------- MySQL Configuration ----------------
+app.config['MYSQL_HOST'] = os.environ.get('MYSQL_HOST')
+app.config['MYSQL_USER'] = os.environ.get('MYSQL_USER')
+app.config['MYSQL_PASSWORD'] = os.environ.get('MYSQL_PASSWORD')
+app.config['MYSQL_DB'] = os.environ.get('MYSQL_DB')
+app.config['MYSQL_PORT'] = int(os.environ.get('MYSQL_PORT', 3306))
+app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
 mysql = MySQL(app)
 
+# QR Code Folder
 QR_FOLDER = os.path.join('static', 'qr')
 os.makedirs(QR_FOLDER, exist_ok=True)
 
-# ---------------- SMTP Configuration (for Forgot Password OTP emails) ----------------
-# Fill these in with a real sending account before "Forgot password" will work.
-# For Gmail: turn on 2-Step Verification, then create an "App Password" and use
-# that below (NOT your normal Gmail password).
+# ---------------- SMTP Configuration ----------------
 app.config['SMTP_SERVER'] = 'smtp.gmail.com'
 app.config['SMTP_PORT'] = 587
-app.config['SMTP_EMAIL'] = 'smartshopperguide6@gmail.com'        # TODO: replace with your sending email
-app.config['SMTP_PASSWORD'] = 'xpox riiv bmrr sssr'          # TODO: replace with your Gmail App Password
-
+app.config['SMTP_EMAIL'] = os.environ.get('SMTP_EMAIL')
+app.config['SMTP_PASSWORD'] = os.environ.get('SMTP_PASSWORD')
 
 OTP_VALID_MINUTES = 10       
 
