@@ -2,8 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify, s
 from flask_mysqldb import MySQL
 from werkzeug.security import generate_password_hash, check_password_hash
 import qrcode, os, re
-import random, smtplib, ssl, datetime
-from email.mime.text import MIMEText
+import random, datetime
+import requests
 
 app = Flask(__name__)
 
@@ -26,13 +26,11 @@ mysql = MySQL(app)
 QR_FOLDER = os.path.join('static', 'qr')
 os.makedirs(QR_FOLDER, exist_ok=True)
 
-# ---------------- SMTP Configuration ----------------  
-app.config['SMTP_SERVER'] = 'smtp-relay.brevo.com'
-app.config['SMTP_PORT'] = 587
-app.config['SMTP_EMAIL'] = os.environ.get('SMTP_EMAIL')            # SMTP login (e.g. b24161001@smtp-brevo.com)
-app.config['SMTP_PASSWORD'] = os.environ.get('SMTP_PASSWORD')
+# ---------------- Brevo Email API Configuration ----------------
+# NOTE: Render blocks outbound SMTP ports (25/465/587), so we send emails
+# via Brevo's HTTPS API instead of raw SMTP.
+app.config['BREVO_API_KEY'] = os.environ.get('BREVO_API_KEY')
 # The "From" address must be a verified sender in Brevo (Senders, Domains & Dedicated IPs).
-# This is usually a different address than the SMTP login above.
 app.config['SENDER_EMAIL'] = os.environ.get('SENDER_EMAIL', 'smartshopperguide6@gmail.com')
 
 OTP_VALID_MINUTES = 10       
@@ -105,31 +103,33 @@ def generate_otp():
 
 def send_otp_email(to_email, otp):
     try:
-        msg = MIMEText(
-            f"Your Smart Shopper OTP is {otp}. It is valid for {OTP_VALID_MINUTES} minutes."
+        payload = {
+            "sender": {
+                "name": "Smart Shopper's Guide",
+                "email": app.config["SENDER_EMAIL"]
+            },
+            "to": [{"email": to_email}],
+            "subject": "Your Smart Shopper OTP",
+            "textContent": f"Your Smart Shopper OTP is {otp}. It is valid for {OTP_VALID_MINUTES} minutes."
+        }
+        headers = {
+            "accept": "application/json",
+            "api-key": app.config["BREVO_API_KEY"],
+            "content-type": "application/json"
+        }
+
+        response = requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+            json=payload,
+            headers=headers,
+            timeout=15
         )
 
-        msg["Subject"] = "Your Smart Shopper OTP"
-        msg["From"] = app.config["SENDER_EMAIL"]
-        msg["To"] = to_email
+        if response.status_code in (200, 201):
+            return True
 
-        context = ssl.create_default_context()
-
-        # Connect to Brevo's SMTP relay
-        server = smtplib.SMTP(app.config["SMTP_SERVER"], app.config["SMTP_PORT"])
-        server.starttls(context=context)
-        server.login(
-            app.config["SMTP_EMAIL"],
-            app.config["SMTP_PASSWORD"]
-        )
-        server.sendmail(
-            app.config["SENDER_EMAIL"],
-            to_email,
-            msg.as_string()
-        )
-        server.quit()
-
-        return True
+        print("BREVO API ERROR:", response.status_code, response.text)
+        return False
 
     except Exception as e:
         print("EMAIL ERROR:", e)
