@@ -139,6 +139,15 @@ def send_otp_email(to_email, otp):
 # =========================================================
 # BASIC PAGES
 # =========================================================
+# Password reset is switched off until the OTP is stored safely on the server.
+@app.before_request
+def disable_password_reset():
+    if request.endpoint in ('forgot_password', 'verify_otp', 'resend_otp'):
+        session.pop('reset_otp', None)
+        flash("Password reset is temporarily unavailable.", "error")
+        return redirect(url_for('login_page'))
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
